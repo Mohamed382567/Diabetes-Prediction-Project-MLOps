@@ -23,16 +23,12 @@ with st.sidebar:
     **Important Note:**
     * Predictions are based on a limited dataset (~768 records) and are for **demonstration purposes only**.
     * This is **NOT a medical device** and should not replace professional medical advice.
-    * **Model Limitations:** Due to the small dataset, the model may exhibit biases or have lower accuracy on new, real-world patient data.
     
     **🚀 Future Scalability:**
-    In a real-world healthcare setting, this system would require:
-    * Significantly larger, diverse datasets.
-    * Integration with Electronic Health Records (EHR).
-    * Continuous monitoring and human review.
+    The system requires significantly larger datasets and integration with professional healthcare systems for real-world use.
     """)
     st.write("---")
-    st.write("Developed by: [Mohamed Elbaz]") # Update with your name
+    st.write("Developed for MLOps Portfolio Demonstration.")
 
 # =========================================================
 # 2. Title and Introduction
@@ -49,16 +45,15 @@ st.write("---")
 @st.cache_resource
 def load_models():
     try:
-        # Load the saved models
         model = joblib.load('random_forest_model.joblib')
         imputer = joblib.load('iterative_imputer.joblib')
         scaler = joblib.load('standard_scaler.joblib')
         
-        # Load training columns to ensure order (Crucial for prediction consistency)
+        # Load training columns to ensure order
         try:
             model_cols = joblib.load('training_columns.joblib')
         except:
-            # Fallback columns based on analysis of your notebook
+            # Fallback columns list (as derived from your notebook)
             model_cols = [
                 'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'Age',
                 'Is_Glucose_Missing', 'Is_BloodPressure_Missing', 'Is_SkinThickness_Missing', 
@@ -71,7 +66,7 @@ def load_models():
             ]
         return model, imputer, scaler, model_cols
     except Exception as e:
-        st.error(f"Error loading models: Please ensure all .joblib files are in the directory. Error: {e}")
+        st.error(f"Error loading models: {e}")
         return None, None, None, None
 
 model, imputer, scaler, model_columns = load_models()
@@ -104,43 +99,35 @@ if st.button("🔍 Analyze Risk"):
     if model is not None:
         try:
             # --- A. Initial DataFrame Setup ---
-            input_dict = {
+            df = pd.DataFrame({
                 'Pregnancies': [pregnancies], 'Glucose': [glucose], 'BloodPressure': [bp],
                 'SkinThickness': [skin], 'Insulin': [insulin], 'BMI': [bmi],
                 'DiabetesPedigreeFunction': [dpf], 'Age': [age]
-            }
-            df = pd.DataFrame(input_dict)
+            })
             
-            # --- B. MICE Preparation and Imputation ---
+            # --- B. MICE Preparation and Imputation FIX ---
             target_cols = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
-            EPSILON = 1e-6
-
+            
             # 1. Create Missing Flags and Convert 0s to NaN
             for col in target_cols:
                 df[f'Is_{col}_Missing'] = (df[col] == 0).astype(int)
                 df[col] = df[col].replace(0, np.nan)
 
-            # 2. Apply Iterative Imputer (MICE)
-            impute_cols = ['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age']
+            # 2. Define MICE Input Columns (FIXED: must include missing flags)
+            mice_input_cols = [
+                'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 
+                'DiabetesPedigreeFunction', 'Age'
+            ] + [f'Is_{col}_Missing' for col in target_cols]
             
-            # Note: We must ensure the input to the imputer matches the training data format
-            # For simplicity and safety, we transform the main numerical columns only
-            try:
-                df[impute_cols] = imputer.transform(df[impute_cols])
-            except Exception as e:
-                # Fallback: simpler imputation if MICE transformation fails due to column issues
-                st.warning(f"MICE Imputer transformation failed ({e}). Using mean imputation as a fallback.")
-                df[target_cols] = df[target_cols].fillna(df[target_cols].mean())
+            # 3. Apply Imputer (passing exactly 13 columns)
+            df[mice_input_cols] = imputer.transform(df[mice_input_cols])
 
-            # Clamping Insulin and dropping original DPF (based on your notebook steps)
+            # Clamping Insulin (must be done after imputation if it filled the zero/NaN)
             df['Insulin'] = df['Insulin'].apply(lambda x: max(x, 1.0))
-            if 'DiabetesPedigreeFunction' in df.columns:
-                 df = df.drop(columns=['DiabetesPedigreeFunction'])
-
-
+            
             # --- C. Feature Engineering (Your Custom Features) ---
             
-            df['Log_DPF'] = np.log(df['DiabetesPedigreeFunction'].iloc[0] if 'DiabetesPedigreeFunction' in df.columns else df['DiabetesPedigreeFunction'].fillna(EPSILON).iloc[0]) # Use original DPF or imputed value
+            df['Log_DPF'] = np.log(df['DiabetesPedigreeFunction'].replace(0, EPSILON))
             df['Glucose_to_Insulin_Ratio'] = df['Glucose'] / (df['Insulin'] + EPSILON)
             df['Age_BMI_Interaction'] = df['Age'] * df['BMI']
             df['Sqrt_Insulin'] = np.sqrt(df['Insulin'])
@@ -164,6 +151,10 @@ if st.button("🔍 Analyze Risk"):
                 col_name = f"BMI_Category_{cat}"
                 df[col_name] = 1 if cat == bmi_cat else 0
 
+            # **CRITICAL FIX:** Drop original DPF column after creating Log_DPF
+            if 'DiabetesPedigreeFunction' in df.columns:
+                df = df.drop(columns=['DiabetesPedigreeFunction'])
+            
             # --- D. Final Column Alignment and Scaling ---
             df_final = pd.DataFrame()
             for col in model_columns:
@@ -177,7 +168,6 @@ if st.button("🔍 Analyze Risk"):
                               'Log_DPF', 'Glucose_to_Insulin_Ratio', 'Age_BMI_Interaction', 'Sqrt_Insulin', 
                               'Sqrt_Pregnancies', 'BP_Age_Index', 'Skin_BMI_Ratio']
             
-            # Filter numerical_cols to only those present in df_final
             scaling_cols = [col for col in numerical_cols if col in df_final.columns]
 
             if scaling_cols:
@@ -207,6 +197,6 @@ if st.button("🔍 Analyze Risk"):
 
         except Exception as e:
             st.error(f"An error occurred during prediction: {e}")
-            st.warning("Debugging Tip: Check the columns alignment between the input data and the loaded models.")
+            st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
