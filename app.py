@@ -3,8 +3,10 @@ import pandas as pd
 import numpy as np
 import joblib
 
-# CRITICAL FIX: Define EPSILON here to prevent NameError
+# CRITICAL FIX: Define EPSILON globally for use in feature engineering
 EPSILON = 1e-6
+# Define the custom threshold used during model training
+CUSTOM_THRESHOLD = 0.40 
 
 # =========================================================
 # 1. Project Setup & Disclaimer
@@ -18,20 +20,21 @@ st.set_page_config(
 # --- Sidebar: Project Context and Disclaimer ---
 with st.sidebar:
     st.header("ℹ️ Project Context & Disclaimer")
-    st.info("""
+    st.info(f"""
     **⚠️ Educational MLOps Project**
     
-    This application demonstrates an end-to-end Machine Learning pipeline (Data Cleaning -> Feature Engineering -> Modeling -> Deployment).
+    This application demonstrates an end-to-end Machine Learning pipeline.
     
     **Important Note:**
-    * Predictions are based on a limited dataset (~768 records) and are for **demonstration purposes only**.
+    * Predictions are based on a limited dataset and are for **demonstration purposes only**.
     * This is **NOT a medical device** and should not replace professional medical advice.
+    * **Decision Threshold:** The model uses a {CUSTOM_THRESHOLD*100:.0f}% threshold for classification, matching the optimization done during training to minimize False Negatives.
     
     **🚀 Future Scalability:**
     The system requires significantly larger datasets and integration with professional healthcare systems for real-world use.
     """)
     st.write("---")
-    st.write("Developed for MLOps Portfolio Demonstration.") 
+    st.write("Developed for MLOps Portfolio Demonstration.")
 
 # =========================================================
 # 2. Title and Introduction
@@ -48,7 +51,6 @@ st.write("---")
 @st.cache_resource
 def load_models():
     try:
-        # Load the saved models
         model = joblib.load('random_forest_model.joblib')
         imputer = joblib.load('iterative_imputer.joblib')
         scaler = joblib.load('standard_scaler.joblib')
@@ -57,7 +59,7 @@ def load_models():
         try:
             model_cols = joblib.load('training_columns.joblib')
         except:
-            # Fallback columns list (as derived from your notebook)
+            # Fallback columns list (must match all features created)
             model_cols = [
                 'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'Age',
                 'Is_Glucose_Missing', 'Is_BloodPressure_Missing', 'Is_SkinThickness_Missing', 
@@ -109,7 +111,7 @@ if st.button("🔍 Analyze Risk"):
                 'DiabetesPedigreeFunction': [dpf], 'Age': [age]
             })
             
-            # --- B. MICE Preparation and Imputation FIX ---
+            # --- B. MICE Preparation and Imputation ---
             target_cols = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
             
             # 1. Create Missing Flags and Convert 0s to NaN
@@ -117,16 +119,16 @@ if st.button("🔍 Analyze Risk"):
                 df[f'Is_{col}_Missing'] = (df[col] == 0).astype(int)
                 df[col] = df[col].replace(0, np.nan)
 
-            # 2. Define MICE Input Columns (FIXED: must include missing flags)
+            # 2. Define MICE Input Columns (13 columns)
             mice_input_cols = [
                 'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 
                 'DiabetesPedigreeFunction', 'Age'
             ] + [f'Is_{col}_Missing' for col in target_cols]
             
-            # 3. Apply Imputer (passing exactly 13 columns)
+            # 3. Apply Imputer
             df[mice_input_cols] = imputer.transform(df[mice_input_cols])
 
-            # Clamping Insulin (must be done after imputation if it filled the zero/NaN)
+            # Clamping Insulin 
             df['Insulin'] = df['Insulin'].apply(lambda x: max(x, 1.0))
             
             # --- C. Feature Engineering (Your Custom Features) ---
@@ -155,7 +157,7 @@ if st.button("🔍 Analyze Risk"):
                 col_name = f"BMI_Category_{cat}"
                 df[col_name] = 1 if cat == bmi_cat else 0
 
-            # **CRITICAL FIX:** Drop original DPF column after creating Log_DPF
+            # CRITICAL FIX: Drop original DPF column after creating Log_DPF
             if 'DiabetesPedigreeFunction' in df.columns:
                 df = df.drop(columns=['DiabetesPedigreeFunction'])
             
@@ -165,7 +167,6 @@ if st.button("🔍 Analyze Risk"):
                 if col in df.columns:
                     df_final[col] = df[col]
                 else:
-                    # Failsafe for missing columns (should be 0 for one-hot/flags)
                     df_final[col] = 0 
             
             # Scaling (Ensure only numerical columns are scaled)
@@ -178,22 +179,28 @@ if st.button("🔍 Analyze Risk"):
             if scaling_cols:
                 df_final[scaling_cols] = scaler.transform(df_final[scaling_cols])
             
-            # --- E. Prediction ---
-            prediction = model.predict(df_final)[0]
+            # --- E. Prediction Logic (Custom Threshold FIX) ---
             probability = model.predict_proba(df_final)[0][1]
+            
+            # Apply the 40% custom threshold
+            if probability >= CUSTOM_THRESHOLD:
+                prediction = 1
+            else:
+                prediction = 0
 
             # --- F. Display Results ---
             st.write("---")
             st.subheader("📊 Prediction Result")
             
+            # Display based on the 40% threshold decision
             if prediction == 1:
                 st.error(f"**High Risk of Diabetes Detected**")
-                st.write(f"Probability: **{probability*100:.1f}%**")
+                st.write(f"Probability: **{probability*100:.1f}%** (Decision Threshold: {CUSTOM_THRESHOLD*100:.0f}%)")
                 st.progress(int(probability*100))
                 st.warning("⚠️ This result suggests a high probability. Please consult a healthcare professional for accurate diagnosis.")
             else:
                 st.success(f"**Low Risk Detected**")
-                st.write(f"Probability: **{probability*100:.1f}%**")
+                st.write(f"Probability: **{probability*100:.1f}%** (Decision Threshold: {CUSTOM_THRESHOLD*100:.0f}%)")
                 st.progress(int(probability*100))
                 st.balloons()
 
