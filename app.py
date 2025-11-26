@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import joblib
 
+# CRITICAL FIX: Define EPSILON here to prevent NameError
+EPSILON = 1e-6
+
 # =========================================================
 # 1. Project Setup & Disclaimer
 # =========================================================
@@ -28,7 +31,7 @@ with st.sidebar:
     The system requires significantly larger datasets and integration with professional healthcare systems for real-world use.
     """)
     st.write("---")
-    st.write("Developed for MLOps Portfolio Demonstration.")
+    st.write("Developed for MLOps Portfolio Demonstration.") 
 
 # =========================================================
 # 2. Title and Introduction
@@ -45,6 +48,7 @@ st.write("---")
 @st.cache_resource
 def load_models():
     try:
+        # Load the saved models
         model = joblib.load('random_forest_model.joblib')
         imputer = joblib.load('iterative_imputer.joblib')
         scaler = joblib.load('standard_scaler.joblib')
@@ -161,6 +165,7 @@ if st.button("🔍 Analyze Risk"):
                 if col in df.columns:
                     df_final[col] = df[col]
                 else:
+                    # Failsafe for missing columns (should be 0 for one-hot/flags)
                     df_final[col] = 0 
             
             # Scaling (Ensure only numerical columns are scaled)
