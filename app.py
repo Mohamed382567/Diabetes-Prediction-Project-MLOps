@@ -62,7 +62,7 @@ def load_models():
         
         # Load training columns to ensure order
         try:
-            model_cols = joblib.load('scaler.pkl')
+            model_cols = joblib.load('training_columns.joblib')
         except:
             # Fallback columns list (must match all features created)
             model_cols = [
@@ -217,5 +217,6 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
+
 
 
