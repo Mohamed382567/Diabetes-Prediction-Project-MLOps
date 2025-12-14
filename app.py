@@ -61,7 +61,9 @@ def load_models():
         except:
             # Fallback columns list (must match all features created)
             model_cols = [
-                'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'Age', 'Log_DPF', 'Glucose_to_Insulin_Ratio', 
+                'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'Age',
+                'Is_Glucose_Missing', 'Is_BloodPressure_Missing', 'Is_SkinThickness_Missing', 
+                'Is_Insulin_Missing', 'Is_BMI_Missing','Log_DPF', 'Glucose_to_Insulin_Ratio', 
                 'Age_BMI_Interaction', 'Sqrt_Insulin', 'Sqrt_Pregnancies', 'BP_Age_Index', 
                 'Skin_BMI_Ratio', 'Is_Glucose_Critical', 
                 'BMI_Category_Normal', 'BMI_Category_Obese_Class_I', 
@@ -210,5 +212,6 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
+
 
 
