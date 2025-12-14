@@ -58,12 +58,12 @@ def load_models():
     """Loads the model and all preprocessors (Imputer, Scaler) and feature names."""
     try:
         # Assuming all artifacts are in the same folder as app.py for Streamlit Cloud deployment
-        model = joblib.load('model.pkl')
-        imputer = joblib.load('knn_imputer.pkl')
-        scaler = joblib.load('scaler.pkl')
+        model = joblib.load('random_forest_model.joblib')
+        imputer = joblib.load('training_columns.joblib')
+        scaler = joblib.load('sandard_scaler.joblib')
         
         # CRITICAL: Load training columns to ensure order for prediction
-        model_cols = joblib.load('columns.pkl')
+        model_cols = joblib.load('training_columns.joblib')
         
         st.success("✅ All model artifacts loaded successfully.")
         return model, imputer, scaler, model_cols
@@ -223,3 +223,4 @@ if st.button("🔍 Analyze Risk"):
 
 else:
     st.warning("Models not loaded. Check the paths and file names.")
+
