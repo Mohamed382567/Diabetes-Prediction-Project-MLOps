@@ -34,7 +34,7 @@ with st.sidebar:
     The system requires significantly larger datasets and integration with professional healthcare systems for real-world use.
     """)
     st.write("---")
-    st.write("Developed for MLOps Portfolio Demonstration.")
+    st.write("Developed by: [Your Name]") # Update with your name
 
 # =========================================================
 # 2. Title and Introduction
@@ -51,9 +51,9 @@ st.write("---")
 @st.cache_resource
 def load_models():
     try:
-        model = joblib.load('model.pkl')
-        imputer = joblib.load('knn_imputer.pkl')
-        scaler = joblib.load('scaler.pkl')
+        model = joblib.load('random_forest_model.joblib')
+        imputer = joblib.load('iterative_imputer.joblib')
+        scaler = joblib.load('standard_scaler.joblib')
         
         # Load training columns to ensure order
         try:
@@ -63,7 +63,7 @@ def load_models():
             model_cols = [
                 'Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'Age',
                 'Is_Glucose_Missing', 'Is_BloodPressure_Missing', 'Is_SkinThickness_Missing', 
-                'Is_Insulin_Missing', 'Is_BMI_Missing','Log_DPF', 'Glucose_to_Insulin_Ratio', 
+                'Is_Insulin_Missing', 'Is_BMI_Missing', 'Log_DPF', 'Glucose_to_Insulin_Ratio', 
                 'Age_BMI_Interaction', 'Sqrt_Insulin', 'Sqrt_Pregnancies', 'BP_Age_Index', 
                 'Skin_BMI_Ratio', 'Is_Glucose_Critical', 
                 'BMI_Category_Normal', 'BMI_Category_Obese_Class_I', 
@@ -212,7 +212,3 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
-
-
-
-
