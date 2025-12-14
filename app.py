@@ -18,8 +18,7 @@ CUSTOM_THRESHOLD = 0.40
 st.set_page_config(
     page_title="Diabetes Prediction System (Educational)",
     page_icon="🩺",
-    layout="wide"
-)
+    layout="wide")
 
 # --- Sidebar: Project Context and Disclaimer ---
 with st.sidebar:
@@ -216,4 +215,5 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
+
 
