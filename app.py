@@ -58,7 +58,7 @@ def load_models():
     try:
         model = joblib.load('model.pkl')
         imputer = joblib.load('knn_imputer.pkl')
-        scaler = joblib.load('scaler.joblib')
+        scaler = joblib.load('scaler.pkl')
         
         # Load training columns to ensure order
         try:
@@ -217,6 +217,7 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
+
 
 
 
