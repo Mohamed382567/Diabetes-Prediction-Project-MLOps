@@ -2,6 +2,11 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+import os
+import streamlit as st
+
+st.write("Current Directory:", os.getcwd())
+st.write("Files in Directory:", os.listdir())
 
 # CRITICAL FIX: Define EPSILON globally for use in feature engineering
 EPSILON = 1e-6
@@ -212,4 +217,5 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
+
 
