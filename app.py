@@ -11,8 +11,7 @@ st.write("Files in Directory:", os.listdir())
 # CRITICAL FIX: Define EPSILON globally for use in feature engineering
 EPSILON = 1e-6
 # Define the custom threshold used during model training
-CUSTOM_THRESHOLD = 0.40 
-
+CUSTOM_THRESHOLD = 0.40
 # =========================================================
 # 1. Project Setup & Disclaimer
 # =========================================================
@@ -217,3 +216,4 @@ if st.button("🔍 Analyze Risk"):
             st.warning("Debugging Tip: Ensure that the columns in training_columns.joblib match the final features created here.")
     else:
         st.warning("Models not loaded. Check the paths and file names.")
+
